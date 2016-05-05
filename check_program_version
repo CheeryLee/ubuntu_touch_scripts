@@ -1,0 +1,53 @@
+#!/bin/bash
+#
+#  Copyright (c) 2016 CheeryLee
+#
+#  Author: Alexander Pluzhnikov <cheerylee90@gmail.com>
+#
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU General Public License as
+#  published by the Free Software Foundation; either version 2 of the
+#  License, or (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+#  USA
+#
+
+TARPATH=$1
+pwd=$(pwd)
+
+if [ -z $TARPATH ]; then
+	echo "Set unpacked tarball path!"
+	exit 1
+fi
+
+function checking_version ()
+{
+	filename=$(find -executable -name \*)
+	for i in $filename; do
+		if file $i | grep -q "ELF"; then
+			ver=$(file $i | cut -d "," -f6 | sed -r 's/ for GNU\/Linux //')
+			if [ $ver != "2.6.32" ]; then
+				echo "$i is not valid (for $ver)"
+				c=$(( c + 1 ))
+			fi
+		fi
+	done
+	
+	if [[ c -eq 0 ]]; then
+		echo "All done! There is no incorrect executables!"
+	fi
+}
+echo "" && echo "==================  BIN FOLDER  =================="
+cd $1/bin
+checking_version
+echo "" && echo "==================  SBIN FOLDER  =================="
+cd $pwd && cd $1/sbin
+checking_version
