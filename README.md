@@ -16,3 +16,11 @@ This script was written to introduce support for Linux older than 3.4. It shows 
 check_program_version path_to_tarball
 ```
 - `path_to_tarball` — path to unpacked system tarball in tar.gz that you can download from Ubuntu's site.
+
+## build_on_archlinux
+The script downloads and installs all required dependencies for the successfull Ubuntu Touch building on your ArchLinux.
+#### How to use:
+```
+build_on_archlinux download path_to_download
+```
+- `path_to_download` — path where you want to store the source code.
