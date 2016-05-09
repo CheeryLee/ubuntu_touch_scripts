@@ -1,0 +1,142 @@
+#!/bin/bash
+#
+#  Copyright (c) 2016 CheeryLee
+#
+#  Author: Alexander Pluzhnikov <cheerylee90@gmail.com>
+#
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU General Public License as
+#  published by the Free Software Foundation; either version 2 of the
+#  License, or (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+#  USA
+#
+
+set -e
+
+pwd=$(pwd)
+NO_TARBALL=0
+YELLOW='\033[1;33m'
+RED='\033[1;31m'
+NO_COLOR='\033[0m'
+
+function usage()
+{
+	echo -e "The script downloads and installs all required dependencies for
+	\rthe successfull Ubuntu Touch building on your ArchLinux.\n
+	\rusage: build_on_archlinux [COMMANDS] ...
+	{if download} <path to download>\n
+	\rCommands:
+	download		download Ubuntu Touch sources
+	help			show this message
+	version			check the version of script\n
+	\rCheck new version at github.com/CheeryLee/ubuntu_touch_scripts\n"
+	
+	exit 0
+}
+
+function download_ubuntu_touch()
+{
+	echo -e "${YELLOW}Resolving dependencies ... ${NO_COLOR}"
+	
+	DEPS="git gnupg flex bison gperf zip bzr curl glibc \
+		lib32-ncurses lib32-readline gcc-multilib lib32-zlib \
+		libxml2 libxslt schedtool python2-virtualenv"
+	sudo pacman -S --needed $DEPS
+	[[ $? != 0 ]] && exit 1 && echo -e "${RED}The program ended with an error${NO_COLOR}"
+	
+	[[ ! -d $PATH_TO_DOWNLOAD/.workdir/aur ]] && mkdir $PATH_TO_DOWNLOAD/.workdir && mkdir $PATH_TO_DOWNLOAD/.workdir/aur
+	cd $PATH_TO_DOWNLOAD/.workdir/aur
+	
+	echo -e "${YELLOW}Downloading required packages from AUR ... ${NO_COLOR}"
+	
+	AUR_PKG="dpkg.tar.gz \
+		python2-launchpadlib.tar.gz python2-lazr-restful.tar.gz \
+		python2-lazr-restfulclient.tar.gz python2-lazr-uri.tar.gz \
+		python2-oauth2.tar.gz python2-wadllib.tar.gz simg2img-git.tar.gz"
+	
+	for PKG in $AUR_PKG; do
+		PKG_NAME=$(echo $PKG  | cut -d "." -f1)
+		if [[ -z $(pacman -Qs $PKG_NAME) ]]; then
+			echo -e -n "${YELLOW}Installing $PKG ... ${NO_COLOR}"
+			curl -L -O -s https://aur.archlinux.org/cgit/aur.git/snapshot/$PKG
+			
+			if [[ $? == 0 ]]; then
+				tar xzf $PKG
+				echo -e "${YELLOW}[done]${NO_COLOR}"
+			else
+				echo -e "${RED}The program ended with an error${NO_COLOR}"
+				exit 1
+			fi
+			
+			cd $PKG_NAME
+			makepkg -sri
+			
+			if [[ $? == 0 ]]; then
+				echo -e "${YELLOW}[done]${NO_COLOR}"
+			else
+				echo -e "${RED}The program ended with an error${NO_COLOR}"
+				exit 1
+			fi
+			
+			cd ..
+		else
+			echo "$PKG_NAME is already installed"
+		fi
+	done
+	
+	echo -e -n "${YELLOW}Downloading repo ... ${NO_COLOR}"
+	curl -s https://storage.googleapis.com/git-repo-downloads/repo > ../repo
+	chmod a+x ../repo
+	echo -e "${YELLOW}[done]${NO_COLOR}"
+	
+	echo -e -n "${YELLOW}Preparing sources ... ${NO_COLOR}"
+	export PATH=$PATH_TO_DOWNLOAD/.workdir/:$PATH
+	cd $PATH_TO_DOWNLOAD
+	repo init -u https://code-review.phablet.ubuntu.com/p/aosp/platform/manifest.git -b phablet-4.4.2_r1 >/dev/null 2>&1
+	echo -e "${YELLOW}[done]${NO_COLOR}"
+	
+	echo -e -n "${YELLOW}Enter the number of jobs to download: ${NO_COLOR}"
+	read NUM
+	[[ -z $NUM ]] && NUM=1
+	echo -e -n "${YELLOW}Downloading sources ... ${NO_COLOR}"
+	repo sync -j$NUM -f
+	
+	echo "" && exit 0
+}
+
+while [ $# -gt 0 ]; do
+	case "$1" in
+		download)
+			if [[ -z $2 ]]; then
+				echo -e "${RED}Set the path where you want to keep the sources${NO_COLOR}"
+				exit 1
+			fi
+			PATH_TO_DOWNLOAD=$(realpath $2)
+			download_ubuntu_touch
+			cd $pwd
+			;;
+		help|-h|--help)
+			usage
+			;;
+		version|--version)
+			echo -e "Build Ubuntu Touch 16.04 on ArchLinux\n"
+			exit 0;
+			;;
+		*)
+			usage
+			;;
+	esac
+done
+
+if [[ -z $1 ]]; then
+	usage
+fi
