@@ -20,23 +20,43 @@
 #  USA
 #
 
-TARPATH=$1
-pwd=$(pwd)
+set -e 
 
-if [ -z $TARPATH ]; then
-	echo "Set unpacked tarball path!"
-	exit 1
+pwd=$(pwd)
+YELLOW='\033[1;33m'
+RED='\033[1;31m'
+NO_COLOR='\033[0m'
+FOLDERS="/bin /sbin /usr/bin"
+
+function usage()
+{
+	echo -e "The script introduces support for Linux older than 3.4.
+	\rIt shows the programs that are not supported by old kernels.\n
+	\rusage: check_program_version <path to unpacked tarball>\n
+	\rCheck new version at github.com/CheeryLee/ubuntu_touch_scripts\n"
+	
+	exit 0
+}
+
+if [[ -z $1 ]]; then
+	usage
 fi
 
-function checking_version ()
-{
-	filename=$(find -executable -name \*)
-	for i in $filename; do
+TARPATH=$(realpath $1)
+
+for i in $FOLDERS; do
+	
+	cd $TARPATH$i
+	echo -e "${YELLOW}\n==================  $i FOLDER  ==================${NO_COLOR}"
+	
+	FILENAME=$(find -executable -name \*)
+	for i in $FILENAME; do
 		if file $i | grep -q "ELF"; then
-			ver=$(file $i | cut -d "," -f6 | sed -r 's/ for GNU\/Linux //')
-			if [ $ver != "2.6.32" ]; then
-				echo "$i is not valid (for $ver)"
-				c=$(( c + 1 ))
+			VER=$(file $i | cut -d "," -f6 | sed -r 's/ for GNU\/Linux //')
+			if [ "$VER" != "2.6.32" ] && [ "$VER" != "2.6.31" ]; then
+				i=$(echo $i | cut -d "/" -f2)
+				echo -e "${RED}$i is not valid (for $VER)${NO_COLOR}"
+				c=$(($c+1))
 			fi
 		fi
 	done
@@ -44,10 +64,4 @@ function checking_version ()
 	if [[ c -eq 0 ]]; then
 		echo "All done! There is no incorrect executables!"
 	fi
-}
-echo "" && echo "==================  BIN FOLDER  =================="
-cd $1/bin
-checking_version
-echo "" && echo "==================  SBIN FOLDER  =================="
-cd $pwd && cd $1/sbin
-checking_version
+done
