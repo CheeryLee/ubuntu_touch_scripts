@@ -55,6 +55,7 @@ function download_ubuntu_touch()
 	
 	[[ ! -d $PATH_TO_DOWNLOAD/.workdir/aur ]] && mkdir $PATH_TO_DOWNLOAD/.workdir && mkdir $PATH_TO_DOWNLOAD/.workdir/aur
 	cd $PATH_TO_DOWNLOAD/.workdir/aur
+	export PATH=$PATH_TO_DOWNLOAD/.workdir:$PATH
 	
 	echo -e "${YELLOW}Downloading required packages from AUR ... ${NO_COLOR}"
 	
@@ -96,6 +97,13 @@ function download_ubuntu_touch()
 	echo -e -n "${YELLOW}Downloading repo ... ${NO_COLOR}"
 	curl -s https://storage.googleapis.com/git-repo-downloads/repo > ../repo
 	chmod a+x ../repo
+	echo -e "${YELLOW}[done]${NO_COLOR}"
+	
+	echo -e -n "${YELLOW}Creating some symlinks ... ${NO_COLOR}"
+	if [ ! -f ../python* >/dev/null 2>&1 ]; then
+		ln -s /usr/bin/python2 ../python
+		ln -s /usr/bin/python2-config ../python-config
+	fi
 	echo -e "${YELLOW}[done]${NO_COLOR}"
 	
 	echo -e -n "${YELLOW}Preparing sources ... ${NO_COLOR}"
