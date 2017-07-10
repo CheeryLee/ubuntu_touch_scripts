@@ -1,5 +1,8 @@
 # Ubuntu Touch scripts
 There are scripts that you can use for porting Ubuntu Touch to a new device.
+
+**[UPD 10.07.2017]:** Due to the fact that Canonical ceased to support OS, the scripts are irrelevant. However, they can be used as a base for developing new scripts.
+
 ## rootstock_touch_install
 This script is taken from Launchpad repository. It allows you to write a system image on your device.
 #### How to use:
